@@ -9,7 +9,10 @@ class Config:
     PERMANENT_SESSION_LIFETIME = 1800  # 30 minutes
 
     # Caching configuration
-    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'SimpleCache')
+    CACHE_TYPE = os.environ.get('CACHE_TYPE', 'RedisCache')
+    CACHE_REDIS_HOST = os.environ.get('CACHE_REDIS_HOST', 'redis')
+    CACHE_REDIS_PORT = int(os.environ.get('CACHE_REDIS_PORT', '6379'))
+    CACHE_REDIS_DB = int(os.environ.get('CACHE_REDIS_DB', '0'))
     CACHE_DEFAULT_TIMEOUT = int(os.environ.get('CACHE_DEFAULT_TIMEOUT', '300'))
     CACHE_KEY_PREFIX = 'dns_by_eye_'
     CACHE_THRESHOLD = 1000  # Maximum number of items in cache
@@ -21,7 +24,7 @@ class Config:
 
     # Enhanced rate limiting
     RATELIMIT_DEFAULT = os.environ.get('RATELIMIT_DEFAULT', '10 per minute')
-    RATELIMIT_STORAGE_URL = os.environ.get('RATELIMIT_STORAGE_URL', 'memory://')
+    RATELIMIT_STORAGE_URL = os.environ.get('RATELIMIT_STORAGE_URL', 'redis://redis:6379/1')
     RATELIMIT_STRATEGY = 'fixed-window'
     RATELIMIT_HEADERS_ENABLED = True
     
