@@ -16,8 +16,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY app/ app/
-COPY config.py .
-COPY *.py .
+COPY config.py ./
+COPY *.py ./
 
 # Create directories for generated files
 RUN mkdir -p app/static/generated
