@@ -57,9 +57,36 @@ DNS By Eye is a Flask-based DNS delegation visualizer. It traces DNS delegation 
 
 ## Live Demo
 
-Try DNS By Eye online at: **[https://tools.apathy.ca](https://tools.apathy.ca)**
+Try DNS By Eye online at: **[https://tools.apathy.ca/dns-by-eye/](https://tools.apathy.ca/dns-by-eye/)**
 
-## Quickstart (Docker)
+## Deployment Options
+
+### Option 1: Tools Portal Integration (Recommended)
+
+DNS By Eye is designed to integrate seamlessly with the [Tools Portal](https://github.com/apathy-ca/tools-portal) for a professional multi-tool environment with shared infrastructure.
+
+```bash
+# Clone the Tools Portal with DNS By Eye as a submodule
+git clone --recursive https://github.com/apathy-ca/tools-portal.git
+cd tools-portal
+
+# Deploy with SSL (production)
+./scripts/setup-ssl.sh your-domain.com admin@your-domain.com
+sudo docker compose -f docker-compose-tools-ssl.yaml up -d
+
+# Access DNS By Eye at: https://your-domain.com/dns-by-eye/
+```
+
+**Benefits of Tools Portal Integration:**
+- **Shared Infrastructure**: Redis caching, SSL certificates, nginx proxy
+- **Professional UI**: Unified landing page and navigation
+- **Microservices Architecture**: Independent scaling and updates
+- **Production Ready**: Security headers, rate limiting, monitoring
+- **Easy Management**: Single domain, centralized configuration
+
+### Option 2: Standalone Deployment
+
+For standalone deployment of just DNS By Eye:
 
 ```bash
 git clone https://github.com/apathy-ca/dns_by_eye.git
