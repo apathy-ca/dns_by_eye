@@ -22,7 +22,11 @@ import logging
 from logging.handlers import RotatingFileHandler
 import html
 
-app = Flask(__name__, static_folder="static", static_url_path="/static")
+# Configure static URL path based on environment
+# When integrated into tools-portal, static files should be served at /dns-by-eye/static/
+import os
+static_url_path = os.environ.get('STATIC_URL_PATH', '/static')
+app = Flask(__name__, static_folder="static", static_url_path=static_url_path)
 app.config.from_object(Config)
 
 # Initialize compression
