@@ -15,7 +15,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
-COPY . .
+COPY app/ app/
+COPY config.py .
+COPY *.py .
 
 # Create directories for generated files
 RUN mkdir -p app/static/generated
@@ -28,4 +30,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:5000/api/health || exit 1
 
 # Run the application with gunicorn
-CMD ["gunicorn", "--config=gunicorn_config.py", "app.main:app"]
+CMD ["gunicorn", "--bind=0.0.0.0:5000", "--workers=2", "--timeout=120", "app.main:app"]
