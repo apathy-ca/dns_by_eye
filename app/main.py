@@ -24,7 +24,6 @@ import html
 
 # Configure static URL path based on environment
 # When integrated into tools-portal, static files should be served at /dns-by-eye/static/
-import os
 static_url_path = os.environ.get('STATIC_URL_PATH', '/static')
 app = Flask(__name__, static_folder="static", static_url_path=static_url_path)
 app.config.from_object(Config)
@@ -349,6 +348,17 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'timestamp': time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())
+    })
+
+@app.route('/api/debug', methods=['GET'])
+@limiter.limit(Config.RATELIMIT_DEFAULT)
+def debug_config():
+    """Debug endpoint to check Flask configuration."""
+    return jsonify({
+        'static_url_path': app.static_url_path,
+        'static_folder': app.static_folder,
+        'env_static_url_path': os.environ.get('STATIC_URL_PATH', 'NOT_SET'),
+        'url_for_static_test': url_for('static', filename='dns_by_eye_200x200.png')
     })
 
 @app.route('/api/dns-servers', methods=['GET'])
