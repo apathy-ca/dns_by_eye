@@ -79,14 +79,14 @@ compress = Compress(app)
 # Configure cache
 cache = Cache(app)
 
-# Enhanced rate limiting with IP tracking
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=[Config.RATELIMIT_DEFAULT],
-    storage_uri=Config.RATELIMIT_STORAGE_URL,
-    strategy=Config.RATELIMIT_STRATEGY
-)
-limiter.init_app(app)
+# Rate limiting disabled for better user experience
+# limiter = Limiter(
+#     key_func=get_remote_address,
+#     default_limits=[Config.RATELIMIT_DEFAULT],
+#     storage_uri=Config.RATELIMIT_STORAGE_URL,
+#     strategy=Config.RATELIMIT_STRATEGY
+# )
+# limiter.init_app(app)
 
 # Configure logging with enhanced security
 import sys
@@ -395,7 +395,6 @@ def static_files(filename):
     return send_from_directory(app.static_folder, filename)
 
 @app.route('/api/health', methods=['GET'])
-@limiter.limit(Config.RATELIMIT_DEFAULT)
 def health_check():
     """Health check endpoint."""
     return jsonify({
@@ -404,7 +403,6 @@ def health_check():
     })
 
 @app.route('/api/debug', methods=['GET'])
-@limiter.limit(Config.RATELIMIT_DEFAULT)
 def debug_config():
     """Debug endpoint to check Flask configuration."""
     return jsonify({
@@ -415,7 +413,6 @@ def debug_config():
     })
 
 @app.route('/api/dns-servers', methods=['GET'])
-@limiter.limit(Config.RATELIMIT_DEFAULT)
 def get_dns_servers():
     """Get list of available DNS servers."""
     return jsonify({
@@ -424,7 +421,6 @@ def get_dns_servers():
     })
 
 @app.route('/api/delegation', methods=['POST'])
-@limiter.limit(Config.RATELIMIT_API_DEFAULT)
 @handle_dns_errors
 def api_delegation():
     """API endpoint for DNS delegation analysis with visualizations."""
@@ -712,7 +708,6 @@ def api_delegation():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/trace/<domain>', methods=['GET'])
-@limiter.limit(Config.RATELIMIT_DEFAULT)
 def api_trace_domain(domain):
     """API endpoint for DNS delegation trace without visualizations."""
     if not is_valid_domain(domain):
@@ -743,7 +738,6 @@ def api_trace_domain(domain):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/compare', methods=['POST'])
-@limiter.limit(Config.RATELIMIT_API_DEFAULT)
 def api_compare():
     """API endpoint for comparing multiple domains."""
     try:
@@ -818,7 +812,6 @@ def api_compare():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/export/<domain>', methods=['GET'])
-@limiter.limit(Config.RATELIMIT_DEFAULT)
 def export_data(domain):
     """Export endpoint for DNS delegation data in JSON or CSV format."""
     if not is_valid_domain(domain):
@@ -928,7 +921,6 @@ def export_data(domain):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/nameservers/<domain>', methods=['GET'])
-@limiter.limit(Config.RATELIMIT_DEFAULT)
 def api_nameservers(domain):
     """API endpoint to get nameservers for a domain."""
     if not is_valid_domain(domain):
