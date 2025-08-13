@@ -1251,53 +1251,50 @@ def trace_delegation(domain, verbose=False, custom_resolver=None, debug=False):
                     verbose_info = " | ".join(glue)
                     
         except dns.resolver.NXDOMAIN as e:
-            # Domain doesn't exist - this is a definitive answer, stop here
+            # Domain doesn't exist - show this but continue to build full chain
             end_time = time.time()
             response_time = round((end_time - start_time) * 1000, 2)
             ns_list = [f"NXDOMAIN: {zone} does not exist"]
             verbose_info = f"Domain {zone} does not exist" if verbose else ""
             error_type = "NXDOMAIN"
-            should_continue = False
+            # Continue tracing to show full delegation chain even with errors
             
         except dns.resolver.NoAnswer as e:
-            # No NS records found for this zone
+            # No NS records found - show this but continue tracing
             end_time = time.time()
             response_time = round((end_time - start_time) * 1000, 2)
             ns_list = [f"No NS records: {zone} has no nameservers"]
             verbose_info = f"No NS records found for {zone}" if verbose else ""
             error_type = "NO_NS"
-            should_continue = False
+            # Continue tracing to show full delegation chain
             
         except dns.resolver.Timeout as e:
-            # Timeout - could be temporary, but stop tracing deeper
+            # Timeout - show this but continue tracing
             end_time = time.time()
             response_time = round((end_time - start_time) * 1000, 2)
             ns_list = [f"Timeout: Query for {zone} timed out"]
             verbose_info = f"DNS query timeout for {zone}" if verbose else ""
             error_type = "TIMEOUT"
-            should_continue = False
+            # Continue tracing to show full delegation chain
             
         except dns.resolver.NoNameservers as e:
-            # No nameservers available to answer the query
+            # No nameservers available - show this but continue tracing
             end_time = time.time()
             response_time = round((end_time - start_time) * 1000, 2)
             ns_list = [f"No nameservers: No servers available for {zone}"]
             verbose_info = f"No nameservers available for {zone}" if verbose else ""
             error_type = "NO_NAMESERVERS"
-            should_continue = False
+            # Continue tracing to show full delegation chain
             
         except Exception as e:
-            # Other errors - log them but continue if it's not too deep in the chain
+            # Other errors - show them but continue tracing
             end_time = time.time()
             response_time = round((end_time - start_time) * 1000, 2)
             error_msg = str(e)
             ns_list = [f"Error: {error_msg}"]
             verbose_info = f"Query error for {zone}: {error_msg}" if verbose else ""
             error_type = "OTHER"
-            
-            # If we're past the TLD level and getting errors, stop tracing
-            if i > 1:  # 0=root, 1=TLD, 2+=domain levels
-                should_continue = False
+            # Continue tracing to show full delegation chain even with errors
         
         # Flag slow responses (>2000ms is considered slow for DNS)
         is_slow = response_time > 2000
