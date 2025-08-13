@@ -17,20 +17,29 @@ def test_graphviz_availability():
     try:
         # Test basic Graphviz functionality
         with tempfile.NamedTemporaryFile(suffix='.gv', delete=False) as tmp_file:
-            test_dot = Digraph()
-            test_dot.node('test', 'test')
-            test_dot.render(tmp_file.name, format='png', cleanup=True)
+            tmp_name = tmp_file.name
             
-            # Check if PNG was created
-            png_file = tmp_file.name + '.png'
-            if os.path.exists(png_file):
-                print("✅ Graphviz is working - PNG file created")
+        test_dot = Digraph()
+        test_dot.node('test', 'test')
+        test_dot.render(tmp_name, format='png', cleanup=True)
+        
+        # Check if PNG was created
+        png_file = tmp_name + '.png'
+        if os.path.exists(png_file):
+            print("✅ Graphviz is working - PNG file created")
+            # Clean up test files
+            try:
                 os.remove(png_file)
-                os.remove(tmp_file.name)
-                return True
-            else:
-                print("❌ Graphviz failed - PNG file not created")
-                return False
+            except:
+                pass
+            try:
+                os.remove(tmp_name)
+            except:
+                pass
+            return True
+        else:
+            print("❌ Graphviz failed - PNG file not created")
+            return False
                 
     except Exception as e:
         print(f"❌ Graphviz error: {e}")
