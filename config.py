@@ -23,16 +23,16 @@ class Config:
     DNS_TIMEOUT = float(os.environ.get('DNS_TIMEOUT', '2'))
     DNS_LIFETIME = float(os.environ.get('DNS_LIFETIME', '4'))
 
-    # Enhanced rate limiting
-    RATELIMIT_DEFAULT = os.environ.get('RATELIMIT_DEFAULT', '10 per minute')
+    # Enhanced rate limiting (increased for testing)
+    RATELIMIT_DEFAULT = os.environ.get('RATELIMIT_DEFAULT', '1000 per minute')
     RATELIMIT_STORAGE_URL = os.environ.get('RATELIMIT_STORAGE_URL', 'redis://redis:6379/1')
     RATELIMIT_STRATEGY = 'fixed-window'
     RATELIMIT_HEADERS_ENABLED = True
     
-    # API specific rate limits
-    RATELIMIT_API_DEFAULT = '100 per day'
-    RATELIMIT_API_EXPORT = '50 per day'
-    RATELIMIT_API_DEBUG = '20 per hour'
+    # API specific rate limits (increased for testing)
+    RATELIMIT_API_DEFAULT = '10000 per day'
+    RATELIMIT_API_EXPORT = '5000 per day'
+    RATELIMIT_API_DEBUG = '2000 per hour'
     
     # Request size limits
     MAX_CONTENT_LENGTH = 1 * 1024 * 1024  # 1MB
