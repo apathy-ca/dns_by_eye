@@ -536,8 +536,11 @@ def api_delegation():
                         
                         # Render with error handling
                         try:
-                            dot.render("app/static/generated/" + filename, format='png', cleanup=True)
-                            graph_urls.append(url_for('static', filename='generated/' + filename + '.png'))
+                            graph_path = "app/static/generated/" + filename
+                            dot.render(graph_path, format='png', cleanup=True)
+                            graph_url = url_for('static', filename='generated/' + filename + '.png')
+                            graph_urls.append(graph_url)
+                            app.logger.info(f"Generated graph {i} for {domain}: {filename}.png at {graph_url}")
                         except Exception as render_error:
                             app.logger.error(f"Error rendering graph {i} for {domain}: {str(render_error)}")
                             # Continue with other graphs even if one fails
