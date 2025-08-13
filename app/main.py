@@ -462,49 +462,62 @@ def api_delegation():
         
         # Generate graphs for each level
         graph_urls = []
+        graphviz_available = True
         try:
-            for i, node in enumerate(trace):
-                zone = node['zone']
-                dot = Digraph(comment='DNS Delegation Graph for ' + zone)
-                dot.attr(rankdir='TB')  # Top->down layout
-                
-                # Add zone node
-                dot.node(zone, zone, shape='box', style='filled', fillcolor='lightblue')
-                
-                # Get valid nameservers (not errors)
-                valid_nameservers = [ns for ns in node['nameservers'] 
-                                   if not ns.startswith(('Error:', 'NXDOMAIN:', 'No NS records:', 'Timeout:', 'No nameservers:'))]
-                
-                # For non-target domains with 4+ nameservers, show only first 3 + "X more"
-                is_target_domain = (zone == domain)
-                if not is_target_domain and len(valid_nameservers) >= 4:
-                    # Show first 3 nameservers
-                    for ns in valid_nameservers[:3]:
-                        dot.node(ns, ns)
-                        dot.edge(zone, ns)
-                    
-                    # Add "X more" node
-                    more_count = len(valid_nameservers) - 3
-                    more_node = f"more_{zone}_{i}"
-                    more_label = f"... ({more_count} more)"
-                    dot.node(more_node, more_label, shape='ellipse', style='filled', fillcolor='lightgray')
-                    dot.edge(zone, more_node)
-                else:
-                    # Show all nameservers for target domain or if < 4 nameservers
-                    for ns in valid_nameservers:
-                        dot.node(ns, ns)
-                        dot.edge(zone, ns)
-                
-                # Save graph
-                filename = domain.replace('.', '_') + '_' + str(i)
-                dot.render("app/static/generated/" + filename, format='png', cleanup=True)
-                graph_urls.append(url_for('static', filename='generated/' + filename + '.png'))
+            # Test if Graphviz is available
+            test_dot = Digraph()
+            test_dot.node('test', 'test')
+            test_dot.render('app/static/generated/test', format='png', cleanup=True)
+            os.remove('app/static/generated/test.png')  # Clean up test file
         except Exception as e:
-            app.logger.error("Error generating graphs: " + str(e))
+            app.logger.warning("Graphviz not available for graph generation: " + str(e))
+            graphviz_available = False
+        
+        if graphviz_available:
+            try:
+                for i, node in enumerate(trace):
+                    zone = node['zone']
+                    dot = Digraph(comment='DNS Delegation Graph for ' + zone)
+                    dot.attr(rankdir='TB')  # Top->down layout
+                    
+                    # Add zone node
+                    dot.node(zone, zone, shape='box', style='filled', fillcolor='lightblue')
+                    
+                    # Get valid nameservers (not errors)
+                    valid_nameservers = [ns for ns in node['nameservers'] 
+                                       if not ns.startswith(('Error:', 'NXDOMAIN:', 'No NS records:', 'Timeout:', 'No nameservers:'))]
+                    
+                    # For non-target domains with 4+ nameservers, show only first 3 + "X more"
+                    is_target_domain = (zone == domain)
+                    if not is_target_domain and len(valid_nameservers) >= 4:
+                        # Show first 3 nameservers
+                        for ns in valid_nameservers[:3]:
+                            dot.node(ns, ns)
+                            dot.edge(zone, ns)
+                        
+                        # Add "X more" node
+                        more_count = len(valid_nameservers) - 3
+                        more_node = f"more_{zone}_{i}"
+                        more_label = f"... ({more_count} more)"
+                        dot.node(more_node, more_label, shape='ellipse', style='filled', fillcolor='lightgray')
+                        dot.edge(zone, more_node)
+                    else:
+                        # Show all nameservers for target domain or if < 4 nameservers
+                        for ns in valid_nameservers:
+                            dot.node(ns, ns)
+                            dot.edge(zone, ns)
+                    
+                    # Save graph
+                    filename = domain.replace('.', '_') + '_' + str(i)
+                    dot.render("app/static/generated/" + filename, format='png', cleanup=True)
+                    graph_urls.append(url_for('static', filename='generated/' + filename + '.png'))
+            except Exception as e:
+                app.logger.error("Error generating delegation graphs: " + str(e))
+                graphviz_available = False
         
         # Generate Domain Report graph
         domain_report_graph_url = None
-        if cross_ref_results:
+        if cross_ref_results and graphviz_available:
             try:
                 dot = Digraph(comment='Domain Report for ' + domain)
                 dot.attr(rankdir='TB')  # Top->down layout
