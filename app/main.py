@@ -460,15 +460,31 @@ def api_delegation():
         except Exception as e:
             app.logger.warning("Additional analysis failed for " + domain + ": " + str(e))
         
-        # Generate graphs for each level
+        # Generate graphs for each level with enhanced error handling
         graph_urls = []
         graphviz_available = True
+        
+        # Test Graphviz availability with better error handling
         try:
-            # Test if Graphviz is available
-            test_dot = Digraph()
-            test_dot.node('test', 'test')
-            test_dot.render('app/static/generated/test', format='png', cleanup=True)
-            os.remove('app/static/generated/test.png')  # Clean up test file
+            import tempfile
+            import gc
+            
+            # Use a temporary file for testing to avoid conflicts
+            with tempfile.NamedTemporaryFile(suffix='.gv', delete=False) as tmp_file:
+                test_dot = Digraph()
+                test_dot.node('test', 'test')
+                test_dot.render(tmp_file.name, format='png', cleanup=True)
+                
+                # Clean up test files
+                try:
+                    os.remove(tmp_file.name + '.png')
+                    os.remove(tmp_file.name)
+                except:
+                    pass
+                    
+            # Force garbage collection to free resources
+            gc.collect()
+            
         except Exception as e:
             app.logger.warning("Graphviz not available for graph generation: " + str(e))
             graphviz_available = False
@@ -476,51 +492,83 @@ def api_delegation():
         if graphviz_available:
             try:
                 for i, node in enumerate(trace):
-                    zone = node['zone']
-                    dot = Digraph(comment='DNS Delegation Graph for ' + zone)
-                    dot.attr(rankdir='TB')  # Top->down layout
-                    
-                    # Add zone node
-                    dot.node(zone, zone, shape='box', style='filled', fillcolor='lightblue')
-                    
-                    # Get valid nameservers (not errors)
-                    valid_nameservers = [ns for ns in node['nameservers'] 
-                                       if not ns.startswith(('Error:', 'NXDOMAIN:', 'No NS records:', 'Timeout:', 'No nameservers:'))]
-                    
-                    # For non-target domains with 4+ nameservers, show only first 3 + "X more"
-                    is_target_domain = (zone == domain)
-                    if not is_target_domain and len(valid_nameservers) >= 4:
-                        # Show first 3 nameservers
-                        for ns in valid_nameservers[:3]:
-                            dot.node(ns, ns)
-                            dot.edge(zone, ns)
+                    try:
+                        zone = node['zone']
                         
-                        # Add "X more" node
-                        more_count = len(valid_nameservers) - 3
-                        more_node = f"more_{zone}_{i}"
-                        more_label = f"... ({more_count} more)"
-                        dot.node(more_node, more_label, shape='ellipse', style='filled', fillcolor='lightgray')
-                        dot.edge(zone, more_node)
-                    else:
-                        # Show all nameservers for target domain or if < 4 nameservers
-                        for ns in valid_nameservers:
-                            dot.node(ns, ns)
-                            dot.edge(zone, ns)
-                    
-                    # Save graph
-                    filename = domain.replace('.', '_') + '_' + str(i)
-                    dot.render("app/static/generated/" + filename, format='png', cleanup=True)
-                    graph_urls.append(url_for('static', filename='generated/' + filename + '.png'))
+                        # Create new Digraph instance for each graph to avoid memory issues
+                        dot = Digraph(comment='DNS Delegation Graph for ' + zone)
+                        dot.attr(rankdir='TB')  # Top->down layout
+                        dot.attr('graph', dpi='96')  # Set reasonable DPI
+                        dot.attr('node', fontsize='10')  # Smaller font to reduce memory usage
+                        
+                        # Add zone node
+                        dot.node(zone, zone, shape='box', style='filled', fillcolor='lightblue')
+                        
+                        # Get valid nameservers (not errors)
+                        valid_nameservers = [ns for ns in node['nameservers'] 
+                                           if not ns.startswith(('Error:', 'NXDOMAIN:', 'No NS records:', 'Timeout:', 'No nameservers:'))]
+                        
+                        # For non-target domains with 4+ nameservers, show only first 3 + "X more"
+                        is_target_domain = (zone == domain)
+                        if not is_target_domain and len(valid_nameservers) >= 4:
+                            # Show first 3 nameservers
+                            for ns in valid_nameservers[:3]:
+                                dot.node(ns, ns)
+                                dot.edge(zone, ns)
+                            
+                            # Add "X more" node
+                            more_count = len(valid_nameservers) - 3
+                            more_node = f"more_{zone}_{i}"
+                            more_label = f"... ({more_count} more)"
+                            dot.node(more_node, more_label, shape='ellipse', style='filled', fillcolor='lightgray')
+                            dot.edge(zone, more_node)
+                        else:
+                            # Show all nameservers for target domain or if < 4 nameservers
+                            for ns in valid_nameservers:
+                                dot.node(ns, ns)
+                                dot.edge(zone, ns)
+                        
+                        # Save graph with timestamp and random component to avoid conflicts
+                        import random
+                        timestamp = str(int(time.time()))
+                        random_id = str(random.randint(1000, 9999))
+                        filename = domain.replace('.', '_') + '_' + str(i) + '_' + timestamp + '_' + random_id
+                        
+                        # Render with error handling
+                        try:
+                            dot.render("app/static/generated/" + filename, format='png', cleanup=True)
+                            graph_urls.append(url_for('static', filename='generated/' + filename + '.png'))
+                        except Exception as render_error:
+                            app.logger.error(f"Error rendering graph {i} for {domain}: {str(render_error)}")
+                            # Continue with other graphs even if one fails
+                            continue
+                        
+                        # Clean up the dot object to free memory
+                        del dot
+                        
+                    except Exception as graph_error:
+                        app.logger.error(f"Error creating graph {i} for {domain}: {str(graph_error)}")
+                        # Continue with other graphs even if one fails
+                        continue
+                
+                # Force garbage collection after all graphs
+                gc.collect()
+                
             except Exception as e:
                 app.logger.error("Error generating delegation graphs: " + str(e))
                 graphviz_available = False
         
-        # Generate Domain Report graph
+        # Generate Domain Report graph with enhanced error handling
         domain_report_graph_url = None
         if cross_ref_results and graphviz_available:
             try:
+                import random
+                import gc
+                
                 dot = Digraph(comment='Domain Report for ' + domain)
                 dot.attr(rankdir='TB')  # Top->down layout
+                dot.attr('graph', dpi='96')  # Set reasonable DPI
+                dot.attr('node', fontsize='10')  # Smaller font to reduce memory usage
                 
                 # Add domain node
                 dot.node(domain, domain, shape='box', style='filled', fillcolor='lightblue')
@@ -569,19 +617,35 @@ def api_delegation():
                                     # Always add a one-way arrow from this nameserver to the referenced one
                                     dot.edge(ns, ref_key, color='blue', penwidth='2')
                 
-                # Save graph
-                filename = domain.replace('.', '_') + "_domain_report"
-                dot.render("app/static/generated/" + filename, format='png', cleanup=True)
-                domain_report_graph_url = url_for('static', filename='generated/' + filename + '.png')
+                # Save graph with timestamp and random component to avoid conflicts
+                timestamp = str(int(time.time()))
+                random_id = str(random.randint(1000, 9999))
+                filename = domain.replace('.', '_') + "_domain_report_" + timestamp + '_' + random_id
+                
+                try:
+                    dot.render("app/static/generated/" + filename, format='png', cleanup=True)
+                    domain_report_graph_url = url_for('static', filename='generated/' + filename + '.png')
+                except Exception as render_error:
+                    app.logger.error(f"Error rendering domain report graph for {domain}: {str(render_error)}")
+                
+                # Clean up the dot object to free memory
+                del dot
+                gc.collect()
+                
             except Exception as e:
                 app.logger.error("Error generating Domain Report graph: " + str(e))
         
-        # Generate Glue Analysis graph
+        # Generate Glue Analysis graph with enhanced error handling
         glue_analysis_graph_url = None
-        if glue_results:
+        if glue_results and graphviz_available:
             try:
+                import random
+                import gc
+                
                 dot = Digraph(comment='Glue Analysis for ' + domain)
                 dot.attr(rankdir='TB')  # Top->down layout
+                dot.attr('graph', dpi='96')  # Set reasonable DPI
+                dot.attr('node', fontsize='10')  # Smaller font to reduce memory usage
                 
                 for zone, data in glue_results.items():
                     dot.node(zone, zone, shape='box', style='filled', fillcolor='lightblue')
@@ -600,10 +664,21 @@ def api_delegation():
                                 dot.node(ip, ip, shape='ellipse')
                                 dot.edge(ns, ip, color='green')
                 
-                # Save graph
-                filename = domain.replace('.', '_') + "_glue_analysis"
-                dot.render("app/static/generated/" + filename, format='png', cleanup=True)
-                glue_analysis_graph_url = url_for('static', filename='generated/' + filename + '.png')
+                # Save graph with timestamp and random component to avoid conflicts
+                timestamp = str(int(time.time()))
+                random_id = str(random.randint(1000, 9999))
+                filename = domain.replace('.', '_') + "_glue_analysis_" + timestamp + '_' + random_id
+                
+                try:
+                    dot.render("app/static/generated/" + filename, format='png', cleanup=True)
+                    glue_analysis_graph_url = url_for('static', filename='generated/' + filename + '.png')
+                except Exception as render_error:
+                    app.logger.error(f"Error rendering glue analysis graph for {domain}: {str(render_error)}")
+                
+                # Clean up the dot object to free memory
+                del dot
+                gc.collect()
+                
             except Exception as e:
                 app.logger.error("Error generating Glue Analysis graph: " + str(e))
         
