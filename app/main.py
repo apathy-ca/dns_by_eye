@@ -338,11 +338,19 @@ def handle_exception(e):
 
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    """Handle rate limit errors with enhanced logging."""
+    """Handle rate limit errors with user-friendly messaging."""
     app.logger.warning("Rate limit exceeded from " + str(get_remote_address()))
+    
+    # Extract rate limit info from description
+    limit_info = str(e.description) if e.description else "rate limit"
+    
     return jsonify({
         'error': 'Rate limit exceeded',
-        'description': e.description
+        'message': 'You have exceeded the rate limit for DNS analyses.',
+        'details': f'Current limit: {limit_info}',
+        'suggestion': 'Please wait a moment before trying again. If you need to perform many analyses, consider spacing them out over time.',
+        'retry_after': 'Please wait 60 seconds before your next request.',
+        'contact': 'If you need higher limits for legitimate use, please contact the administrator.'
     }), 429
 
 @app.after_request
