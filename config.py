@@ -42,3 +42,6 @@ class Config:
     LOG_MAX_BYTES = 10240
     LOG_BACKUP_COUNT = 10
     LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    
+    # Version info
+    VERSION = '1.3.0'
