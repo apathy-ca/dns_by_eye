@@ -63,7 +63,7 @@ Try DNS By Eye online at: **[https://tools.apathy.ca/dns-by-eye/](https://tools.
 
 ### Option 1: Tools Portal Integration (Recommended)
 
-DNS By Eye is designed to integrate seamlessly with the [Tools Portal](https://github.com/apathy-ca/tools-portal) for a professional multi-tool environment with shared infrastructure.
+DNS By Eye is designed to integrate seamlessly with the [Tools Portal](https://github.com/apathy-ca/tools-portal) for a multi-tool environment with shared infrastructure.
 
 ```bash
 # Clone the Tools Portal with DNS By Eye as a submodule
