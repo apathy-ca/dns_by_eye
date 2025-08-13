@@ -21,6 +21,51 @@ from config import Config
 import logging
 from logging.handlers import RotatingFileHandler
 import html
+from functools import wraps
+import traceback
+
+# Enhanced DNS error classes
+class DNSError(Exception):
+    """Base class for DNS-related errors"""
+    pass
+
+class DNSTimeoutError(DNSError):
+    """DNS query timeout"""
+    pass
+
+class DNSResolutionError(DNSError):
+    """DNS resolution failed"""
+    pass
+
+def handle_dns_errors(f):
+    """Decorator for consistent DNS error handling"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except DNSTimeoutError as e:
+            app.logger.warning(f"DNS timeout for {request.url}: {str(e)}")
+            return jsonify({
+                'error': 'DNS_TIMEOUT',
+                'message': 'DNS query timed out',
+                'details': str(e)
+            }), 504
+        except DNSResolutionError as e:
+            app.logger.warning(f"DNS resolution failed for {request.url}: {str(e)}")
+            return jsonify({
+                'error': 'DNS_RESOLUTION_FAILED',
+                'message': 'DNS resolution failed',
+                'details': str(e)
+            }), 502
+        except Exception as e:
+            app.logger.error(f"Unexpected error in {f.__name__}: {str(e)}")
+            app.logger.error(traceback.format_exc())
+            return jsonify({
+                'error': 'INTERNAL_ERROR',
+                'message': 'An unexpected error occurred',
+                'request_id': request.headers.get('X-Request-ID', 'unknown')
+            }), 500
+    return decorated_function
 
 # Configure static URL path based on environment
 # When integrated into tools-portal, static files should be served at /dns-by-eye/static/
@@ -372,6 +417,7 @@ def get_dns_servers():
 
 @app.route('/api/delegation', methods=['POST'])
 @limiter.limit(Config.RATELIMIT_API_DEFAULT)
+@handle_dns_errors
 def api_delegation():
     """API endpoint for DNS delegation analysis with visualizations."""
     try:

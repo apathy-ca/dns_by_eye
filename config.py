@@ -2,7 +2,7 @@ import os
 
 class Config:
     # Security settings
-    SECRET_KEY = os.environ.get('SECRET_KEY', os.urandom(32))
+    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(32).hex()
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
@@ -12,6 +12,7 @@ class Config:
     CACHE_TYPE = os.environ.get('CACHE_TYPE', 'RedisCache')
     CACHE_REDIS_HOST = os.environ.get('CACHE_REDIS_HOST', 'redis')
     CACHE_REDIS_PORT = int(os.environ.get('CACHE_REDIS_PORT', '6379'))
+    CACHE_REDIS_PASSWORD = os.environ.get('CACHE_REDIS_PASSWORD', '')
     CACHE_REDIS_DB = int(os.environ.get('CACHE_REDIS_DB', '0'))
     CACHE_DEFAULT_TIMEOUT = int(os.environ.get('CACHE_DEFAULT_TIMEOUT', '300'))
     CACHE_KEY_PREFIX = 'dns_by_eye_'
