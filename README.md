@@ -1,6 +1,6 @@
 # DNS By Eye
 
-**Version 1.0.2**
+**Version 1.3.0**
 
 DNS By Eye is a Flask-based DNS delegation visualizer. It traces DNS delegation chains from the root through TLDs to the authoritative nameservers, then renders interactive graphs of each layer and cross-reference diagrams. Features include:
 
@@ -374,10 +374,12 @@ This project serves as a comprehensive example of **100% LLM-assisted software d
 - **Code Refinement**: Anthropic Claude (via Cline) for debugging, optimization, and advanced features
 - **Iterative Enhancement**: Continuous collaboration between human direction and AI implementation
 
-### Development Costs
+### Development Costs (Through Version 1.0.0)
 - **ChatGPT (GPT-4)**: < $1.00 USD total
 - **Claude Sonnet (via Cline)**: $29.27 USD total
 - **Total Project Cost**: $30.27 USD
+
+*Note: These costs were tracked through version 1.0.0. Subsequent development and enhancements have not been tracked.*
 
 This demonstrates that sophisticated, production-ready applications can be developed cost-effectively using modern LLMs, with total development costs remaining well under typical hourly consulting rates.
 
