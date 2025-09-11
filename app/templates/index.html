@@ -734,8 +734,8 @@ if __name__ == "__main__":
                                     <ul style="text-align: left; margin-top: 10px; padding-left: 20px;">`;
                         for (const [ns, info] of Object.entries(data.cross_ref_results)) {
                             let refs = info.references || [];
-                            let aRecords = info.A || [];
-                            let aaaaRecords = info.AAAA || [];
+                            let aRecords = info.a_records || [];
+                            let aaaaRecords = info.aaaa_records || [];
                             let glueInfo = data.glue_results && data.glue_results[data.trace[data.trace.length - 1].zone]?.glue_records[ns];
                             
                             html += `<li style="margin: 10px 0;">
@@ -877,12 +877,12 @@ if __name__ == "__main__":
                                         <ul style="text-align: left; margin-top: 10px;">`;
                         for (const [ns, info] of Object.entries(window.lastGraphData.cross_ref_results)) {
                             let refs = info.references || [];
-                            let aRecords = info.A || [];
-                            let aaaaRecords = info.AAAA || [];
+                            let aRecords = info.a_records || [];
+                            let aaaaRecords = info.aaaa_records || [];
                             html += `<li style="margin: 10px 0;"><b>${ns}</b>:<br>
                                      <span style="margin-left: 15px;">References: ${Array.isArray(refs) ? refs.join(', ') : refs}</span><br>
-                                     <span style="margin-left: 15px;">A: ${aRecords.join(', ')}</span><br>
-                                     <span style="margin-left: 15px;">AAAA: ${aaaaRecords.join(', ')}</span></li>`;
+                                     <span style="margin-left: 15px;">A: ${aRecords.join(', ') || 'None'}</span><br>
+                                     <span style="margin-left: 15px;">AAAA: ${aaaaRecords.join(', ') || 'None'}</span></li>`;
                         }
                         html += `</ul></details></div>`;
                     }

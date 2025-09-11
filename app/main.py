@@ -460,7 +460,7 @@ def api_delegation():
             last_level_ns = [ns for ns in trace[-1]['nameservers'] 
                            if not ns.startswith(('Error:', 'NXDOMAIN:', 'No NS records:', 'Timeout:', 'No nameservers:'))]
             if last_level_ns:
-                cross_ref_results = test_last_level_ns_references(last_level_ns, domain)
+                cross_ref_results = test_last_level_ns_references(last_level_ns, domain, custom_resolver)
         except Exception as e:
             app.logger.warning("Additional analysis failed for " + domain + ": " + str(e))
         
@@ -834,7 +834,7 @@ def export_data(domain):
         glue_results = check_glue_records(domain, custom_resolver)
         last_level_ns = [ns for ns in trace[-1]['nameservers'] 
                         if not ns.startswith(('Error:', 'NXDOMAIN:', 'No NS records:', 'Timeout:', 'No nameservers:'))]
-        cross_ref_results = test_last_level_ns_references(last_level_ns, domain) if last_level_ns else {}
+        cross_ref_results = test_last_level_ns_references(last_level_ns, domain, custom_resolver) if last_level_ns else {}
         
         if format == 'json':
             data = {
@@ -1137,16 +1137,45 @@ def check_glue_records(domain, custom_resolver=None):
     
     return glue_results
 
-def test_last_level_ns_references(nameservers, domain):
-    """Test cross-references between nameservers at the last level."""
+def test_last_level_ns_references(nameservers, domain, custom_resolver=None):
+    """Test cross-references between nameservers at the last level and get their A/AAAA records."""
+    query_resolver = custom_resolver if custom_resolver else resolver
     results = {}
-    for ns in nameservers:
-        results[ns] = {'references': set()}
     
+    for ns in nameservers:
+        results[ns] = {
+            'references': set(),
+            'a_records': [],
+            'aaaa_records': []
+        }
+    
+    # First, get A/AAAA records for each nameserver
+    for ns in nameservers:
+        try:
+            # Get A records
+            try:
+                a_records = query_resolver.resolve(ns, 'A')
+                results[ns]['a_records'] = [r.to_text() for r in a_records]
+            except Exception:
+                results[ns]['a_records'] = []
+            
+            # Get AAAA records
+            try:
+                aaaa_records = query_resolver.resolve(ns, 'AAAA')
+                results[ns]['aaaa_records'] = [r.to_text() for r in aaaa_records]
+            except Exception:
+                results[ns]['aaaa_records'] = []
+                
+        except Exception as e:
+            app.logger.warning("Error getting A/AAAA records for nameserver " + ns + ": " + str(e))
+            results[ns]['a_records'] = []
+            results[ns]['aaaa_records'] = []
+    
+    # Then, test cross-references by querying each nameserver for NS records
     for ns in nameservers:
         try:
             # Query this nameserver for NS records of the domain
-            ns_ips = resolver.resolve(ns, 'A')
+            ns_ips = query_resolver.resolve(ns, 'A')
             if ns_ips:
                 query_target = ns_ips[0].to_text()
                 query_msg = dns.message.make_query(domain, 'NS')
@@ -1166,7 +1195,8 @@ def test_last_level_ns_references(nameservers, domain):
                                     results[ns]['self_reference'] = True
         except Exception as e:
             app.logger.warning("Error querying nameserver " + ns + " for " + domain + ": " + str(e))
-            results[ns] = {'references': set(), 'error': str(e)}
+            if 'error' not in results[ns]:
+                results[ns]['error'] = str(e)
     
     # Convert sets to lists for JSON serialization and ensure all nameservers are included
     for ns in nameservers:
@@ -1178,12 +1208,17 @@ def test_last_level_ns_references(nameservers, domain):
             # Add mutual reference indicators
             results[ns]['mutual_references'] = [
                 ref for ref in refs
-                if ref in nameservers and 
+                if ref in nameservers and
                    isinstance(results.get(ref), dict) and
                    any(r.rstrip('.') == ns.rstrip('.') for r in results[ref]['references'])
             ]
         else:
-            results[ns] = {'references': [], 'error': str(results.get(ns, 'Unknown error'))}
+            results[ns] = {
+                'references': [],
+                'a_records': [],
+                'aaaa_records': [],
+                'error': str(results.get(ns, 'Unknown error'))
+            }
     
     return results
 
