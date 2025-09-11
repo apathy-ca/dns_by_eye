@@ -254,19 +254,48 @@ if __name__ == "__main__":
         async function loadDnsServers() {
             try {
                 const resp = await fetch('api/dns-servers');
-                const servers = await resp.json();
+                const data = await resp.json();
                 const select = document.getElementById('dnsServerSelect');
                 
                 // Clear existing options except system default
                 select.innerHTML = '<option value="system">System Default</option>';
                 
-                // Add other servers
-                for (const [value, label] of Object.entries(servers)) {
-                    if (value !== 'system') {
-                        const option = document.createElement('option');
-                        option.value = value;
-                        option.textContent = label;
-                        select.appendChild(option);
+                // Add other servers from the dns_servers array
+                if (data.dns_servers && Array.isArray(data.dns_servers)) {
+                    for (const server of data.dns_servers) {
+                        if (server !== 'system') {
+                            const option = document.createElement('option');
+                            option.value = server;
+                            // Create friendly labels for common DNS servers
+                            let label = server;
+                            switch (server) {
+                                case '8.8.8.8':
+                                    label = '8.8.8.8 (Google DNS)';
+                                    break;
+                                case '8.8.4.4':
+                                    label = '8.8.4.4 (Google DNS)';
+                                    break;
+                                case '1.1.1.1':
+                                    label = '1.1.1.1 (Cloudflare DNS)';
+                                    break;
+                                case '1.0.0.1':
+                                    label = '1.0.0.1 (Cloudflare DNS)';
+                                    break;
+                                case '9.9.9.9':
+                                    label = '9.9.9.9 (Quad9 DNS)';
+                                    break;
+                                case '208.67.222.222':
+                                    label = '208.67.222.222 (OpenDNS)';
+                                    break;
+                                case '208.67.220.220':
+                                    label = '208.67.220.220 (OpenDNS)';
+                                    break;
+                                default:
+                                    label = server;
+                            }
+                            option.textContent = label;
+                            select.appendChild(option);
+                        }
                     }
                 }
             } catch (err) {
