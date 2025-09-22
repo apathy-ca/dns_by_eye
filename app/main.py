@@ -387,7 +387,7 @@ def add_security_headers(response):
 @app.route('/', methods=['GET'])
 def index():
     """Serve the main application page."""
-    return render_template('index.html')
+    return render_template('index.html', config=Config)
 
 @app.route('/static/<path:filename>')
 def static_files(filename):

@@ -44,4 +44,4 @@ class Config:
     LOG_FORMAT = '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
     
     # Version info
-    VERSION = '1.3.0'
+    VERSION = '1.3.1'
