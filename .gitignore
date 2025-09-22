@@ -134,6 +134,10 @@ dmypy.json
 *.swo
 *~
 
+# Generated files (graphs, images, analysis)
+app/static/generated/*
+!app/static/generated/.gitkeep
+
 # IDE files
 .vscode/
 .idea/
